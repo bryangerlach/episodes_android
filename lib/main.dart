@@ -43,10 +43,10 @@ class WebViewContainer extends StatefulWidget {
 
 class _WebViewContainerState extends State<WebViewContainer> {
   late final WebViewController controller;
-  String _url = "";
-
-  // Add this boolean flag to track loading state
   bool _isPageLoading = false;
+  
+  String _currentTheme = 'dark'; 
+  String _url = '';
 
   @override
   void initState() {
@@ -54,19 +54,16 @@ class _WebViewContainerState extends State<WebViewContainer> {
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
-      // 1. Add Navigation Delegate to track loading state
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
-            // Navigation began, lock theme updates
             setState(() => _isPageLoading = true);
           },
           onPageFinished: (String url) {
-            // Navigation finished, unlock theme updates
             setState(() => _isPageLoading = false);
           },
           onWebResourceError: (WebResourceError error) {
-            setState(() => _isPageLoading = false); // Unlock on error too
+            setState(() => _isPageLoading = false);
             debugPrint('WebView error: ${error.description}');
           },
         ),
@@ -75,15 +72,16 @@ class _WebViewContainerState extends State<WebViewContainer> {
         'ThemeChannel',
         onMessageReceived: (JavaScriptMessage message) async {
           if (!mounted) return;
-          
-          if (_isPageLoading) return;
 
-          // Small delay to let the JS execution finish cleanly before touching native UI
           await Future.delayed(const Duration(milliseconds: 50));
           if (!mounted) return;
 
-          // Perform UI update safely now that page is idle
-          if (message.message == 'dark') {
+          // Update Flutter's internal theme state and status bar colors
+          setState(() {
+            _currentTheme = message.message;
+          });
+
+          if (_currentTheme == 'dark') {
             SystemChrome.setSystemUIOverlayStyle(
               const SystemUiOverlayStyle(
                 statusBarColor: Colors.black,
@@ -92,7 +90,7 @@ class _WebViewContainerState extends State<WebViewContainer> {
                 systemNavigationBarIconBrightness: Brightness.light,
               ),
             );
-          } else if (message.message == 'light') {
+          } else if (_currentTheme == 'light') {
             SystemChrome.setSystemUIOverlayStyle(
               const SystemUiOverlayStyle(
                 statusBarColor: Colors.white,
@@ -175,6 +173,7 @@ class _WebViewContainerState extends State<WebViewContainer> {
         }
       },
       child: Scaffold(
+        backgroundColor: _currentTheme == 'light' ? Colors.white : Colors.black,
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: () async => controller.reload(),
