@@ -6,34 +6,48 @@ on:
       - master
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   android-release-build:
-    name: Android Release Build
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: 'zulu'
           java-version: '17'
 
-      - name: Set up Flutter (Latest Stable)
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK and App Bundle
+      - name: Increment version
+        run: ./increment_version.sh
+
+      - name: Commit updated version file
         run: |
-          flutter build apk --release
-          flutter build appbundle --release
+          git config --global user.name 'GitHub Action'
+          git config --global user.name 'action@github.com'
+          # Note: It is safer to pull here to avoid race conditions if multiple builds trigger rapidly,
+          # though usually just adding is fine on single concurrent pushes.
+          git add version.txt
+          git commit -m "Auto-increment build number to $(cat version.txt) [skip ci]"
+          git push
+
+      - name: Build APK
+        run: flutter build apk --release # or 'build appbundle' for Google Play
 
       - name: Archive APK Artifact
         uses: actions/upload-artifact@v4
