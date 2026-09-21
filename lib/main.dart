@@ -45,20 +45,49 @@ class _WebViewContainerState extends State<WebViewContainer> {
   late final WebViewController controller;
   String _url = "";
 
+  // Add this boolean flag to track loading state
+  bool _isPageLoading = false;
+
   @override
   void initState() {
     super.initState();
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0x00000000))
+      // 1. Add Navigation Delegate to track loading state
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (String url) {
+            // Navigation began, lock theme updates
+            setState(() => _isPageLoading = true);
+          },
+          onPageFinished: (String url) {
+            // Navigation finished, unlock theme updates
+            setState(() => _isPageLoading = false);
+          },
+          onWebResourceError: (WebResourceError error) {
+            setState(() => _isPageLoading = false); // Unlock on error too
+            debugPrint('WebView error: ${error.description}');
+          },
+        ),
+      )
       ..addJavaScriptChannel(
         'ThemeChannel',
-        onMessageReceived: (JavaScriptMessage message) {
-          // Listen for theme messages coming from your web app
+        onMessageReceived: (JavaScriptMessage message) async {
+          if (!mounted) return;
+          
+          if (_isPageLoading) return;
+
+          // Small delay to let the JS execution finish cleanly before touching native UI
+          await Future.delayed(const Duration(milliseconds: 50));
+          if (!mounted) return;
+
+          // Perform UI update safely now that page is idle
           if (message.message == 'dark') {
             SystemChrome.setSystemUIOverlayStyle(
               const SystemUiOverlayStyle(
                 statusBarColor: Colors.black,
-                statusBarIconBrightness: Brightness.light, // White clock/icons
+                statusBarIconBrightness: Brightness.light, 
                 systemNavigationBarColor: Colors.black,
                 systemNavigationBarIconBrightness: Brightness.light,
               ),
@@ -67,7 +96,7 @@ class _WebViewContainerState extends State<WebViewContainer> {
             SystemChrome.setSystemUIOverlayStyle(
               const SystemUiOverlayStyle(
                 statusBarColor: Colors.white,
-                statusBarIconBrightness: Brightness.dark, // Dark clock/icons
+                statusBarIconBrightness: Brightness.dark, 
                 systemNavigationBarColor: Colors.white,
                 systemNavigationBarIconBrightness: Brightness.dark,
               ),
