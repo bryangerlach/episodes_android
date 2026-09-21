@@ -6,8 +6,8 @@ on:
       - master
   workflow_dispatch:
 
-permissions:
-  contents: write
+env:
+  BASE_VERSION: '1.0.0'
 
 jobs:
   android-release-build:
@@ -33,21 +33,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Increment version
-        run: ./increment_version.sh
-
-      - name: Commit updated version file
+      - name: Build APK with dynamic versioning
         run: |
-          git config --global user.name 'GitHub Action'
-          git config --global user.name 'action@github.com'
-          # Note: It is safer to pull here to avoid race conditions if multiple builds trigger rapidly,
-          # though usually just adding is fine on single concurrent pushes.
-          git add version.txt
-          git commit -m "Auto-increment build number to $(cat version.txt) [skip ci]"
-          git push
-
-      - name: Build APK
-        run: flutter build apk --release # or 'build appbundle' for Google Play
+          flutter build apk --release \
+            --build-name=$BASE_VERSION \
+            --build-number=${{ github.run_number }}
 
       - name: Archive APK Artifact
         uses: actions/upload-artifact@v4
