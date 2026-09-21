@@ -104,29 +104,13 @@ class _WebViewContainerState extends State<WebViewContainer> {
         if (await controller.canGoBack()) {
           controller.goBack();
         } else {
-          // Exit app if no more pages in history
           SystemNavigator.pop();
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('TV Tracker'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: _showUrlInputDialog,
-              tooltip: 'Change URL',
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => controller.reload(),
-              tooltip: 'Reload',
-            ),
-          ],
-        ),
         body: SafeArea(
           child: RefreshIndicator(
-            onRefresh: () async => controller.reload(),
+            //onRefresh: () async => controller.reload(),
             child: WebViewWidget(controller: controller),
           ),
         ),
