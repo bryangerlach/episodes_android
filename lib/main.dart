@@ -110,7 +110,7 @@ class _WebViewContainerState extends State<WebViewContainer> {
       child: Scaffold(
         body: SafeArea(
           child: RefreshIndicator(
-            //onRefresh: () async => controller.reload(),
+            onRefresh: () async => controller.reload(),
             child: WebViewWidget(controller: controller),
           ),
         ),
