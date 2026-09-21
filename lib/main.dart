@@ -5,6 +5,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.black,             // Top status bar background
+      statusBarIconBrightness: Brightness.light, // Top icons (clock/battery) white
+      systemNavigationBarColor: Colors.black,     // Bottom navigation bar background
+      systemNavigationBarIconBrightness: Brightness.light, // Bottom nav buttons white
+    ),
+  );
+
   runApp(const MyApp());
 }
 
@@ -15,8 +25,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'WebView App',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      title: 'Episodes',
+      theme: ThemeData(
+        scaffoldBackgroundColor: Colors.black, // Ensures background behind WebView is black
+      ),
       home: const WebViewContainer(),
     );
   }
@@ -37,7 +49,33 @@ class _WebViewContainerState extends State<WebViewContainer> {
   void initState() {
     super.initState();
     controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted);
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..addJavaScriptChannel(
+        'ThemeChannel',
+        onMessageReceived: (JavaScriptMessage message) {
+          // Listen for theme messages coming from your web app
+          if (message.message == 'dark') {
+            SystemChrome.setSystemUIOverlayStyle(
+              const SystemUiOverlayStyle(
+                statusBarColor: Colors.black,
+                statusBarIconBrightness: Brightness.light, // White clock/icons
+                systemNavigationBarColor: Colors.black,
+                systemNavigationBarIconBrightness: Brightness.light,
+              ),
+            );
+          } else if (message.message == 'light') {
+            SystemChrome.setSystemUIOverlayStyle(
+              const SystemUiOverlayStyle(
+                statusBarColor: Colors.white,
+                statusBarIconBrightness: Brightness.dark, // Dark clock/icons
+                systemNavigationBarColor: Colors.white,
+                systemNavigationBarIconBrightness: Brightness.dark,
+              ),
+            );
+          }
+        },
+      );
+      
     _checkForSavedUrl();
   }
 
