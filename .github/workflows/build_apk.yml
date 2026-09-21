@@ -33,9 +33,15 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK with dynamic versioning
+      - name: Build APK
         run: |
           flutter build apk --release \
+            --build-name=$BASE_VERSION \
+            --build-number=${{ github.run_number }}
+
+      - name: Build App Bundle
+        run: |
+          flutter build appbundle --release \
             --build-name=$BASE_VERSION \
             --build-number=${{ github.run_number }}
 
