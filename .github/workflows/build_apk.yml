@@ -12,6 +12,8 @@ env:
 jobs:
   android-release-build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,6 +34,19 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Update Version and Set Output
+        id: version
+        run: |
+          NEW_VERSION_NAME="${{ env.BASE_VERSION }}"
+          NEW_VERSION_CODE="${{ github.run_number }}"
+          FULL_VERSION="${NEW_VERSION_NAME}+${NEW_VERSION_CODE}"
+          
+          echo "Updating pubspec.yaml version to $FULL_VERSION"
+          sed -i "s/^version: .*/version: $FULL_VERSION/" pubspec.yaml
+          
+          # Pass the version to GitHub Actions output for the release job
+          echo "version-number=$FULL_VERSION" >> $GITHUB_OUTPUT
 
       - name: Build APK
         run: |
@@ -61,22 +76,42 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     needs: [ android-release-build ]
+    permissions:
+      contents: write # Required to create releases and upload assets
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download APK Artifact
+        uses: actions/download-artifact@v4
         with:
           name: release-apk
-      - uses: actions/download-artifact@v4
+
+      - name: Download AAB Artifact
+        uses: actions/download-artifact@v4
         with:
           name: release-aab
-      - id: version
-        uses: NiklasLehnfeld/flutter-version-number-action@v2
-      - uses: marvinpinto/action-automatic-releases@latest
+
+      # 2. Extract version again for this job
+      - name: Get Version Info
+        id: version
+        run: |
+          PUB_VERSION=$(grep 'version:' pubspec.yaml | awk '{print $2}')
+          FULL_VERSION="${PUB_VERSION}+${{ github.run_number }}"
+          echo "version-number=$FULL_VERSION" >> $GITHUB_OUTPUT
+
+      # 3. Create Release with Dynamic Tag
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          # Use the unique version (e.g., 1.0.0+123) as the tag
+          tag_name: v${{ steps.version.outputs.version-number }}
+          # Use the version as the title
+          name: Release ${{ steps.version.outputs.version-number }}
+          draft: false
           prerelease: false
-          automatic_release_tag: latest
-          title: ${{ steps.version.outputs.version-number }}
           files: |
             *.apk
             *.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

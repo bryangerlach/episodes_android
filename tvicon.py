@@ -1,5 +1,5 @@
 import os
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 def generate_app_icon():
     os.makedirs("assets/icon", exist_ok=True)
@@ -8,67 +8,64 @@ def generate_app_icon():
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     
-    # 1. Modern Rounded Square App Base (Deep Blue/Slate Gradient fill simulation)
-    margin = 80  # Optimized safe zone padding
+    # 1. Background with safe zone padding
+    margin = 80
     box = [margin, margin, size - margin, size - margin]
-    draw.rounded_rectangle(box, radius=220, fill=(15, 23, 42, 255))  # Dark sleek background
+    draw.rounded_rectangle(box, radius=220, fill=(29, 78, 216, 255))
     
-    # Inner subtle border accent
-    inner_box = [margin + 16, margin + 16, size - margin - 16, size - margin - 16]
-    draw.rounded_rectangle(inner_box, radius=200, outline=(30, 41, 59, 255), width=8)
+    # Inner subtle accent border
+    inner_box = [margin + 12, margin + 12, size - margin - 12, size - margin - 12]
+    draw.rounded_rectangle(inner_box, radius=200, outline=(59, 130, 246, 255), width=6)
 
-    # 2. Central Vibrant Blue Screen/Card Badge
-    badge_margin = 200
-    badge_box = [badge_margin, badge_margin, size - badge_margin, size - badge_margin]
-    draw.rounded_rectangle(badge_box, radius=120, fill=(37, 99, 235, 255))  # Vibrant blue accent
-    
-    # Load bold font
-    font_paths = [
-        "C:\\Windows\\Fonts\\arialbd.ttf",
-        "C:\\Windows\\Fonts\\segoeuib.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "/System/Library/Fonts/Helvetica.ttc"
-    ]
-    
-    font = None
-    for path in font_paths:
-        if os.path.exists(path):
-            try:
-                font = ImageFont.truetype(path, 320)  # Large, bold letterform
-                break
-            except IOError:
-                continue
-                
-    if font is None:
-        font = ImageFont.load_default()
-
-    # 3. Draw Bold White "E" Centered
-    text = "E"
-    bbox = font.getbbox(text)
-    text_width = bbox[2] - bbox[0]
-    text_height = bbox[3] - bbox[1]
-    
     center_x = size / 2
     center_y = size / 2
-    
-    text_x = center_x - (text_width / 2) - bbox[0]
-    text_y = center_y - (text_height / 2) - bbox[1] - 10
-    
-    draw.text((text_x, text_y), text, fill=(255, 255, 255, 255), font=font)
 
-    # 4. Small Status Dot (Tracking / Active indicator)
-    dot_center_x = size - 260
-    dot_center_y = 260
-    dot_radius = 24
-    draw.ellipse(
-        [dot_center_x - dot_radius, dot_center_y - dot_radius, 
-         dot_center_x + dot_radius, dot_center_y + dot_radius], 
-        fill=(34, 197, 94, 255)  # Fresh green completion dot
-    )
+    # 2. Draw 3 Shorter, Thicker Horizontal List Bars / Cards
+    bar_width = 400  # More compact width
+    bar_height = 110
+    bar_radius = 24
+    row_spacing = 135
+    
+    # Center the stack vertically
+    start_y = center_y - row_spacing  
+    
+    for i in range(3):
+        current_y = start_y + (i * row_spacing)
+        bar_left = center_x - (bar_width / 2)
+        bar_top = current_y - (bar_height / 2)
+        bar_right = center_x + (bar_width / 2)
+        bar_bottom = current_y + (bar_height / 2)
+        
+        if i == 0:
+            # Top bar (active/highlighted white card)
+            draw.rounded_rectangle([bar_left, bar_top, bar_right, bar_bottom], radius=bar_radius, fill=(255, 255, 255, 255))
+            
+            # Green check / status box on the left inside the bar
+            check_box = [bar_left + 24, bar_top + 24, bar_left + 86, bar_bottom - 24]
+            draw.rounded_rectangle(check_box, radius=14, fill=(34, 197, 94, 255))
+            
+            # Text/content lines inside the bar
+            line1_box = [bar_left + 110, bar_top + 32, bar_right - 30, bar_top + 54]
+            draw.rounded_rectangle(line1_box, radius=6, fill=(29, 78, 216, 255))
+            line2_box = [bar_left + 110, bar_top + 66, bar_right - 100, bar_top + 84]
+            draw.rounded_rectangle(line2_box, radius=5, fill=(147, 197, 253, 255))
+        else:
+            # Secondary/pending bars (translucent light blue cards)
+            draw.rounded_rectangle([bar_left, bar_top, bar_right, bar_bottom], radius=bar_radius, fill=(191, 219, 254, 110))
+            
+            # Pending indicator box on the left
+            check_box = [bar_left + 24, bar_top + 24, bar_left + 86, bar_bottom - 24]
+            draw.rounded_rectangle(check_box, radius=14, fill=(191, 219, 254, 200))
+            
+            # Content lines inside
+            line1_box = [bar_left + 110, bar_top + 32, bar_right - 30, bar_top + 54]
+            draw.rounded_rectangle(line1_box, radius=6, fill=(255, 255, 255, 200))
+            line2_box = [bar_left + 110, bar_top + 66, bar_right - 120, bar_top + 84]
+            draw.rounded_rectangle(line2_box, radius=5, fill=(255, 255, 255, 120))
 
     output_path = "assets/icon/app_icon.png"
     img.save(output_path, "PNG")
-    print(f"Successfully generated modern minimalist app icon at: {output_path}")
+    print(f"Successfully generated compact thick list bar app icon at: {output_path}")
 
 if __name__ == "__main__":
     generate_app_icon()
